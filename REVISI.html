@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Achievements</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#020617;
+  --card:#0f172a;
+  --accent:#38bdf8;
+  --danger:#ef4444;
+  --text:#e5e7eb;
+
+}
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter,sans-serif;
+  background:linear-gradient(135deg,#020617,#0f172a);
+  color:var(--text);
+}
+
+header{
+  padding:60px 20px;
+  text-align:center;
+}
+header h1{
+  font-size:3rem;
+  margin-bottom:10px;
+}
+header p{
+  color:var(--muted);
+  max-width:600px;
+  margin:auto;
+}
+
+main{
+  max-width:1200px;
+  margin:auto;
+  padding:20px;
+}
+
+.controls{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.controls button{
+  background:var(--accent);
+  border:none;
+  padding:12px 22px;
+  border-radius:14px;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.grid{
+  margin-top:25px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:24px;
+}
+
+.card{
+  background:var(--card);
+  border-radius:22px;
+  padding:22px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+
+.cert-img{
+  width:100%;
+  border-radius:18px;
+  margin-bottom:14px;
+  background:#020617;
+}
+
+.badge{
+  display:inline-block;
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:.75rem;
+  font-weight:600;
+  margin-right:6px;
+}
+
+.level{background:#1d4ed8;color:#e0e7ff}
+.result{background:#0ea5e9;color:#ecfeff}
+.result.gold{background:#facc15;color:#422006}
+.result.silver{background:#cbd5e1;color:#020617}
+.result.bronze{background:#fb923c;color:#431407}
+
+.card span{
+  font-size:.85rem;
+  color:var(--muted);
+}
+
+.card p{
+  font-size:.95rem;
+  color:var(--muted);
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+}
+.actions button{
+  flex:1;
+  border:none;
+  padding:8px;
+  border-radius:12px;
+  font-weight:600;
+  cursor:pointer;
+}
+.edit{background:#22c55e;color:#020617}
+.delete{background:var(--danger);color:#fff}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:100;
+}
+.modal-content{
+  background:var(--card);
+  padding:30px;
+  border-radius:20px;
+  width:100%;
+  max-width:440px;
+}
+.modal-content input,
+.modal-content textarea,
+.modal-content select{
+  width:100%;
+  margin-bottom:14px;
+  padding:12px;
+  border-radius:10px;
+  border:none;
+  background:#020617;
+  color:var(--text);
+}
+.modal-content button{
+  width:100%;
+  background:var(--accent);
+  border:none;
+  padding:12px;
+  border-radius:12px;
+  font-weight:600;
+}
+
+footer{
+  text-align:center;
+  padding:30px;
+  color:var(--muted);
+  font-size:.85rem;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>My Achievements</h1>
+  <p>Showcasing my academic and non-academic achievements</p>
+</header>
+
+<main>
+  <div class="controls">
+    <h2>Achievement Showcase</h2>
+    <button onclick="openModal()">+ Add Achievement</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>© 2025 • Personal Achievement Web</footer>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2 id="modalTitle">Add Achievement</h2>
+
+    <input id="title" placeholder="Achievement Title">
+    <input id="year" placeholder="Year / Event">
+
+    <select id="level">
+      <option value="">Select Level</option>
+      <option value="school">School</option>
+      <option value="city">City / Regency</option>
+      <option value="province">Province</option>
+      <option value="national">National</option>
+      <option value="international">International</option>
+    </select>
+
+    <select id="result">
+      <option value="">Select Result</option>
+      <option value="participant">Participant</option>
+      <option value="finalist">Finalist</option>
+      <option value="bronze">Bronze Medalist</option>
+      <option value="silver">Silver Medalist</option>
+      <option value="gold">Gold Medalist</option>
+    </select>
+
+    <textarea id="desc" placeholder="Description"></textarea>
+
+    <label style="font-size:.85rem;color:var(--muted)">Certificate (optional)</label>
+    <input type="file" id="certificate" accept="image/*,application/pdf">
+
+    <button onclick="saveAchievement()">Save</button>
+  </div>
+</div>
+
+<script>
+const grid = document.getElementById("grid");
+const modal = document.getElementById("modal");
+
+const title = document.getElementById("title");
+const year = document.getElementById("year");
+const level = document.getElementById("level");
+const result = document.getElementById("result");
+const desc = document.getElementById("desc");
+const certificate = document.getElementById("certificate");
+
+let achievements = JSON.parse(localStorage.getItem("achievements")) || [];
+let editIndex = null;
+
+function render(){
+  grid.innerHTML = "";
+  achievements.forEach((a,i)=>{
+    const card = document.createElement("div");
+    card.className = "card";
+
+    card.innerHTML = `
+      ${a.certificate ? `<img src="${a.certificate}" class="cert-img">` : ""}
+
+      <h3>${a.title}</h3>
+
+      <div style="margin:8px 0">
+        <span class="badge level">${formatLevel(a.level)}</span>
+        <span class="badge result ${a.result}">${formatResult(a.result)}</span>
+      </div>
+
+      <span>${a.year}</span>
+      <p>${a.desc || ""}</p>
+
+      <div class="actions">
+        <button class="edit" onclick="editAchievement(${i})">Edit</button>
+        <button class="delete" onclick="deleteAchievement(${i})">Delete</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function openModal(edit=false){
+  modal.style.display = "flex";
+  document.getElementById("modalTitle").innerText = edit ? "Edit Achievement" : "Add Achievement";
+}
+
+function saveAchievement(){
+  if(!title.value || !year.value || !level.value || !result.value){
+    alert("Please complete required fields");
+    return;
+  }
+
+  const data = {
+    title: title.value,
+    year: year.value,
+    level: level.value,
+    result: result.value,
+    desc: desc.value,
+    certificate: null
+  };
+
+  const file = certificate.files[0];
+
+  const finish = cert => {
+    data.certificate = cert;
+    if(editIndex !== null) achievements[editIndex] = data;
+    else achievements.unshift(data);
+
+    localStorage.setItem("achievements", JSON.stringify(achievements));
+    closeModal();
+  };
+
+  if(file){
+    const reader = new FileReader();
+    reader.onload = () => finish(reader.result);
+    reader.readAsDataURL(file);
+  }else{
+    finish(editIndex !== null ? achievements[editIndex].certificate : null);
+  }
+}
+
+function editAchievement(i){
+  const a = achievements[i];
+  editIndex = i;
+  title.value = a.title;
+  year.value = a.year;
+  level.value = a.level;
+  result.value = a.result;
+  desc.value = a.desc;
+  openModal(true);
+}
+
+function deleteAchievement(i){
+  if(!confirm("Delete this achievement?")) return;
+  achievements.splice(i,1);
+  localStorage.setItem("achievements", JSON.stringify(achievements));
+  render();
+}
+
+function closeModal(){
+  modal.style.display = "none";
+  editIndex = null;
+  title.value = year.value = desc.value = "";
+  level.value = result.value = "";
+  certificate.value = "";
+  render();
+}
+
+modal.onclick = e => { if(e.target === modal) closeModal(); }
+
+function formatLevel(l){
+  return {
+    school:"School Level",
+    city:"City / Regency Level",
+    province:"Province Level",
+    national:"National Level",
+    international:"International Level"
+  }[l];
+}
+
+function formatResult(r){
+  return {
+    participant:"Participant",
+    finalist:"Finalist",
+    bronze:"Bronze Medalist",
+    silver:"Silver Medalist",
+    gold:"Gold Medalist"
+  }[r];
+}
+
+render();
+</script>
+
+</body>
+</html>
